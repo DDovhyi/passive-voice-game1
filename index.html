@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Detective Whiskers & The Passive Voice Mystery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            height: 100%;
+            height: 100dvh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            position: fixed;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #050811;
+            color: #f8fafc;
+            touch-action: manipulation;
+        }
+        .font-game {
+            font-family: 'Fredoka', cursive;
+        }
+        .btn-action {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-action:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 16px -4px rgba(245, 158, 11, 0.3);
+        }
+        .btn-action:active:not(:disabled) {
+            transform: translateY(1px) scale(0.98);
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.85); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-in {
+            animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+        .floating {
+            animation: floatSlow 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="h-full w-full flex flex-col justify-between p-1.5 sm:p-3 select-none bg-radial from-slate-900 via-slate-950 to-black overflow-hidden">
+
+    <!-- Top Navigation & Scoreboard -->
+    <header class="w-full max-w-4xl mx-auto flex items-center justify-between bg-slate-900/90 backdrop-blur-md border border-amber-500/30 rounded-xl px-2.5 py-1.5 sm:py-2 shadow-lg z-10 flex-shrink-0">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-lg sm:text-2xl shadow-inner border border-amber-300/40">
+                🕵️‍♂️
+            </div>
+            <div>
+                <h1 class="font-game text-xs sm:text-base text-amber-400 font-bold leading-tight tracking-wide flex items-center gap-1.5">
+                    Detective Whiskers 
+                    <span class="text-[9px] sm:text-xs bg-amber-500/20 text-amber-300 font-normal px-1.5 py-0.2 sm:py-0.5 rounded-full border border-amber-500/30">Grammar Manor</span>
+                </h1>
+                <p class="text-[9px] sm:text-xs text-slate-400 font-medium">Passive Voice (A1-A2)</p>
+            </div>
+        </div>
+
+        <!-- Score Counter & Audio Toggle -->
+        <div class="flex items-center gap-2 sm:gap-4">
+            <div class="bg-slate-950/80 px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-xl border border-amber-500/20 flex items-center gap-1 shadow-inner">
+                <span class="text-amber-400 font-bold text-[10px] sm:text-xs uppercase tracking-wider">⭐ Clues:</span>
+                <span id="score-counter" class="font-game text-xs sm:text-lg text-amber-300 font-bold">0 / 6</span>
+            </div>
+            
+            <button id="sound-btn" title="Toggle Sound" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-amber-400 hover:text-amber-300 p-1 sm:p-2 rounded-lg sm:rounded-xl text-sm sm:text-xl transition-all flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 border border-slate-700 shadow-md">
+                🔊
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Canvas & Scene Display Container -->
+    <main class="w-full max-w-4xl mx-auto flex-1 my-1 sm:my-2 relative flex flex-col justify-center items-center overflow-hidden rounded-xl sm:rounded-2xl border border-amber-500/20 bg-slate-950 shadow-2xl min-h-0">
+        <canvas id="gameCanvas" class="w-full h-full block rounded-xl sm:rounded-2xl object-contain"></canvas>
+        
+        <!-- Interactive Detective Dialog Overlay -->
+        <div id="dialog-box" class="absolute bottom-1.5 left-1.5 right-1.5 sm:bottom-3 sm:left-4 sm:right-4 bg-slate-900/95 border border-amber-500/40 rounded-lg sm:rounded-xl p-1.5 sm:p-3 shadow-2xl backdrop-blur-md transition-all">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div id="avatar" class="text-xl sm:text-3xl bg-gradient-to-br from-amber-500/20 to-amber-700/20 p-1 sm:p-2 rounded-lg border border-amber-500/40 flex-shrink-0 shadow-lg floating">
+                    🐱
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1">
+                        <h3 id="speaker-name" class="font-game text-amber-400 text-[11px] sm:text-sm font-bold tracking-wide truncate">Detective Whiskers</h3>
+                        <span id="case-badge" class="text-[8px] sm:text-xs text-amber-300/80 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20 font-mono flex-shrink-0">Case File #1</span>
+                    </div>
+                    <p id="dialog-text" class="text-slate-200 text-[10px] sm:text-xs leading-snug font-medium line-clamp-2">
+                        A valuable antique vase was shattered into pieces! Let's examine the clues and deduce what happened using Passive Voice!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Interactive Task Controls Section -->
+    <footer id="controls-section" class="w-full max-w-4xl mx-auto bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-1.5 sm:p-3 shadow-2xl z-10 flex-shrink-0 flex flex-col gap-1 sm:gap-2">
+        <!-- Question Badge & Text -->
+        <div class="text-center">
+            <div class="inline-flex items-center gap-1.5 sm:gap-2">
+                <span id="task-badge" class="bg-amber-500/20 text-amber-300 text-[9px] sm:text-xs font-bold px-1.5 py-0.2 sm:px-3 sm:py-0.5 rounded-full border border-amber-500/30 uppercase tracking-wider">Evidence #1</span>
+                <span id="grammar-tip" class="text-[9px] sm:text-xs text-slate-400 italic font-semibold">Form: [was / were + V3]</span>
+            </div>
+            <p id="question-text" class="font-game text-xs sm:text-base md:text-lg text-white mt-0.5 tracking-wide leading-tight">
+                The ancient vase ________ by someone last night.
+            </p>
+        </div>
+
+        <!-- Option Buttons Grid -->
+        <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2.5">
+            <!-- Dynamically populated by JS -->
+        </div>
+    </footer>
+
+    <!-- End Game Modal -->
+    <div id="end-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-lg hidden items-center justify-center p-4 z-50">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl p-5 sm:p-8 max-w-md w-full text-center shadow-2xl pop-in relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
+            <div class="text-5xl sm:text-7xl mb-3 floating">🏆</div>
+            <h2 class="font-game text-xl sm:text-3xl text-amber-400 font-bold mb-2">Case Solved!</h2>
+            <p id="final-stats" class="text-slate-300 text-xs sm:text-sm leading-relaxed mb-5 font-medium">
+                Splendid job! Detective Whiskers solved all 6 museum mysteries with your brilliant grammar skills!
+            </p>
+            <button id="restart-btn" class="btn-action w-full bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-game font-bold text-sm sm:text-lg py-2.5 px-5 sm:py-3 sm:px-6 rounded-xl shadow-xl border border-amber-300/50">
+                🔄 Play Again
+            </button>
+        </div>
+    </div>
+
+    <!-- Audio Synthesizer & Game Script -->
+    <script>
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playCorrect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.12);
+                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.25);
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.4);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.45);
+            }
+
+            playIncorrect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(240, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.3);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            }
+
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(450, now);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            }
+        }
+
+        const sound = new SoundEffects();
+
+        const gameTasks = [
+            {
+                id: 1,
+                badge: "Evidence #1 - Past Simple",
+                question: "The ancient vase ________ by someone last night.",
+                tip: "Completed action at a specific past time [was / were + V3]",
+                options: [
+                    { text: "was broken", correct: true },
+                    { text: "is broken", correct: false },
+                    { text: "broke", correct: false }
+                ],
+                hint: "'Last night' signals Past Simple Passive. Use 'was' + 3rd form (broken).",
+                sceneObject: "broken_vase"
+            },
+            {
+                id: 2,
+                badge: "Evidence #2 - Present Simple",
+                question: "The museum doors ________ every day at 6 PM.",
+                tip: "Regular routine action [am / is / are + V3]",
+                options: [
+                    { text: "are locked", correct: true },
+                    { text: "were locked", correct: false },
+                    { text: "lock", correct: false }
+                ],
+                hint: "'Every day' means a regular routine. Plural doors -> 'are locked'.",
+                sceneObject: "locked_door"
+            },
+            {
+                id: 3,
+                badge: "Evidence #3 - Present Perfect",
+                question: "Look! The secret letter ________ by Detective Barnaby!",
+                tip: "Recent action with visible result now [has / have been + V3]",
+                options: [
+                    { text: "was found", correct: false },
+                    { text: "has been found", correct: true },
+                    { text: "is found", correct: false }
+                ],
+                hint: "'Look!' points to a recent result. Singular letter -> 'has been found'.",
+                sceneObject: "secret_letter"
+            },
+            {
+                id: 4,
+                badge: "Evidence #4 - Past Simple",
+                question: "All the valuable paintings ________ two days ago.",
+                tip: "Action finished in the past [was / were + V3]",
+                options: [
+                    { text: "were stolen", correct: true },
+                    { text: "are stolen", correct: false },
+                    { text: "have been stolen", correct: false }
+                ],
+                hint: "'Two days ago' signals Past Simple Passive. Plural paintings -> 'were stolen'.",
+                sceneObject: "empty_frame"
+            },
+            {
+                id: 5,
+                badge: "Evidence #5 - Present Simple",
+                question: "English ________ in many countries around the world.",
+                tip: "General truth / fact [am / is / are + V3]",
+                options: [
+                    { text: "is spoken", correct: true },
+                    { text: "was spoken", correct: false },
+                    { text: "speaks", correct: false }
+                ],
+                hint: "General facts use Present Simple Passive. English is singular -> 'is spoken'.",
+                sceneObject: "world_map"
+            },
+            {
+                id: 6,
+                badge: "Evidence #6 - Present Perfect",
+                question: "Great job! All the clues ________ by our team!",
+                tip: "Completed task connected to present [has / have been + V3]",
+                options: [
+                    { text: "are solved", correct: false },
+                    { text: "have been solved", correct: true },
+                    { text: "were solved", correct: false }
+                ],
+                hint: "Clues (plural) + action completed just now -> 'have been solved'.",
+                sceneObject: "magnifying_glass"
+            }
+        ];
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentTaskIndex = 0;
+        let score = 0;
+        let answeredCurrent = false;
+
+        let animFrameId = null;
+        let animTime = 0;
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 200));
+
+        function renderLoop() {
+            animTime += 0.03;
+            drawScene();
+            animFrameId = requestAnimationFrame(renderLoop);
+        }
+
+        function drawScene() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const w = rect.width;
+            const h = rect.height;
+
+            if (!w || !h) return;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.3, 30, w * 0.5, h * 0.5, w * 0.8);
+            bgGrad.addColorStop(0, '#1e1b4b');
+            bgGrad.addColorStop(0.6, '#0f172a');
+            bgGrad.addColorStop(1, '#050811');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = Math.max(1.5, w * 0.005);
+            ctx.beginPath();
+            ctx.arc(w * 0.5, h * 0.25, Math.min(w * 0.35, h * 0.45), Math.PI, 0);
+            ctx.stroke();
+
+            drawSconceLight(w * 0.12, h * 0.25, w, h);
+            drawSconceLight(w * 0.88, h * 0.25, w, h);
+
+            const paintingW = Math.min(90, w * 0.22);
+            const paintingH = paintingW * 0.65;
+            drawFramedPainting(w * 0.5, h * 0.22, paintingW, paintingH);
+
+            drawVelvetRopes(w, h);
+
+            const floorY = h * 0.62;
+            const floorGrad = ctx.createLinearGradient(0, floorY, 0, h);
+            floorGrad.addColorStop(0, '#1e293b');
+            floorGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = floorGrad;
+            ctx.fillRect(0, floorY, w, h - floorY);
+
+            const carpetGrad = ctx.createLinearGradient(0, floorY, 0, h);
+            carpetGrad.addColorStop(0, '#9f1239');
+            carpetGrad.addColorStop(1, '#881337');
+            ctx.fillStyle = carpetGrad;
+            ctx.beginPath();
+            ctx.moveTo(w * 0.2, floorY);
+            ctx.lineTo(w * 0.8, floorY);
+            ctx.lineTo(w * 0.9, h);
+            ctx.lineTo(w * 0.1, h);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = '#f59e0b44';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY);
+            ctx.lineTo(w, floorY);
+            ctx.stroke();
+
+            const scaleFactor = Math.min(w / 420, h / 260);
+
+            const catX = w * 0.24;
+            const catY = floorY + (10 * scaleFactor);
+            drawDetailedDetectiveCat(catX, catY, scaleFactor);
+
+            const objType = gameTasks[currentTaskIndex].sceneObject;
+            drawMuseumDisplay(w * 0.72, floorY + (8 * scaleFactor), objType, scaleFactor);
+        }
+
+        function drawSconceLight(x, y, w, h) {
+            ctx.save();
+            const glowR = Math.min(35, w * 0.08);
+            const glow = ctx.createRadialGradient(x, y, 3, x, y, glowR);
+            glow.addColorStop(0, 'rgba(251, 191, 36, 0.4)');
+            glow.addColorStop(1, 'rgba(251, 191, 36, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(x, y, glowR, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(x - 3, y, 6, 10);
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawFramedPainting(x, y, width, height) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(-width/2 - 4, -height/2 - 4, width + 8, height + 8);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(-width/2 - 2, -height/2 - 2, width + 4, height + 4);
+
+            ctx.fillStyle = '#1e1b4b';
+            ctx.fillRect(-width/2, -height/2, width, height);
+            ctx.fillStyle = '#38bdf822';
+            ctx.fillRect(-width/2 + 3, -height/2 + 3, width - 6, height - 6);
+
+            ctx.fillStyle = '#10b98155';
+            ctx.beginPath();
+            ctx.arc(0, 2, Math.min(12, height*0.3), 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawVelvetRopes(w, h) {
+            const y = h * 0.60;
+            ctx.save();
+            ctx.strokeStyle = '#9f1239';
+            ctx.lineWidth = Math.max(2, h * 0.01);
+            ctx.beginPath();
+            ctx.moveTo(w * 0.05, y);
+            ctx.quadraticCurveTo(w * 0.25, y + (h * 0.04), w * 0.45, y);
+            ctx.stroke();
+
+            [w * 0.05, w * 0.45].forEach(px => {
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(px - 2, y - 12, 4, 20);
+                ctx.beginPath();
+                ctx.arc(px, y - 12, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+
+        function drawDetailedDetectiveCat(x, y, scale) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale * 0.85, scale * 0.85);
+
+            const tailAngle = Math.sin(animTime * 2) * 0.15;
+            const floatOffset = Math.sin(animTime * 1.5) * 2;
+
+            ctx.translate(0, floatOffset);
+
+            ctx.save();
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-20, -8);
+            ctx.quadraticCurveTo(-35, -25 + tailAngle * 15, -28 + tailAngle * 8, -40);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = '#d97706';
+            ctx.beginPath();
+            ctx.ellipse(0, -20, 22, 26, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#78350f';
+            ctx.beginPath();
+            ctx.moveTo(-20, -32);
+            ctx.lineTo(20, -32);
+            ctx.lineTo(24, 0);
+            ctx.lineTo(-24, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(-5, -14, 10, 4);
+
+            ctx.fillStyle = '#ffedd5';
+            ctx.beginPath();
+            ctx.arc(-13, 2, 6, 0, Math.PI * 2);
+            ctx.arc(13, 2, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ea580c';
+            ctx.beginPath();
+            ctx.arc(0, -45, 22, 0, Math.PI * 2);
+            ctx.fill();
+
+            [-15, 15].forEach((earX, idx) => {
+                const dir = idx === 0 ? -1 : 1;
+                ctx.fillStyle = '#ea580c';
+                ctx.beginPath();
+                ctx.moveTo(earX, -52);
+                ctx.lineTo(earX + dir * 8, -72);
+                ctx.lineTo(earX + dir * 16, -55);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#fbcfe8';
+                ctx.beginPath();
+                ctx.moveTo(earX + dir * 2, -55);
+                ctx.lineTo(earX + dir * 8, -66);
+                ctx.lineTo(earX + dir * 12, -56);
+                ctx.closePath();
+                ctx.fill();
+            });
+
+            ctx.fillStyle = '#451a03';
+            ctx.beginPath();
+            ctx.ellipse(0, -60, 28, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(0, -68, 18, Math.PI, 0);
+            ctx.fill();
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(-18, -68, 36, 4);
+
+            const blink = Math.sin(animTime * 0.5) > 0.96;
+            if (blink) {
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(-13, -46); ctx.lineTo(-5, -46);
+                ctx.moveTo(5, -46); ctx.lineTo(13, -46);
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.ellipse(-9, -46, 6, 8, 0, 0, Math.PI * 2);
+                ctx.ellipse(9, -46, 6, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#10b981';
+                ctx.beginPath();
+                ctx.arc(-8, -46, 4, 0, Math.PI * 2);
+                ctx.arc(10, -46, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-9, -48, 1.5, 0, Math.PI * 2);
+                ctx.arc(9, -48, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = '#ffedd5';
+            ctx.beginPath();
+            ctx.ellipse(0, -38, 8, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.moveTo(-2.5, -40); ctx.lineTo(2.5, -40); ctx.lineTo(0, -37);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1;
+            [-1, 1].forEach(side => {
+                ctx.beginPath();
+                ctx.moveTo(side * 6, -38); ctx.lineTo(side * 22, -42);
+                ctx.moveTo(side * 6, -36); ctx.lineTo(side * 24, -36);
+                ctx.stroke();
+            });
+
+            ctx.save();
+            ctx.translate(18, -24);
+            ctx.rotate(-0.2);
+
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(14, 8, 6, 20);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 0, 17, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+            ctx.restore();
+        }
+
+        function drawMuseumDisplay(x, y, objType, scale) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale * 0.85, scale * 0.85);
+
+            ctx.fillStyle = '#451a03';
+            ctx.fillRect(-35, -25, 70, 60);
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(-40, -32, 80, 8);
+            ctx.fillRect(-42, 35, 84, 8);
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(-18, 0, 36, 14);
+
+            if (objType === 'broken_vase') {
+                ctx.save();
+                ctx.translate(-10, 25);
+
+                ctx.fillStyle = '#00000066';
+                ctx.beginPath();
+                ctx.ellipse(8, 8, 35, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#2563eb';
+                ctx.beginPath();
+                ctx.moveTo(-20, 0);
+                ctx.quadraticCurveTo(-12, -20, 4, -16);
+                ctx.lineTo(12, 4);
+                ctx.quadraticCurveTo(-4, 12, -20, 0);
+                ctx.fill();
+
+                ctx.fillStyle = '#f8fafc';
+                ctx.beginPath();
+                ctx.moveTo(-16, -2);
+                ctx.lineTo(0, -12);
+                ctx.lineTo(6, 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(-14, 2);
+                ctx.lineTo(-4, -10);
+                ctx.stroke();
+
+                drawVaseShard(-28, -4, 11, 0.4, '#2563eb');
+                drawVaseShard(20, -8, 14, -0.6, '#3b82f6');
+                drawVaseShard(28, 6, 10, 1.2, '#f59e0b');
+                drawVaseShard(-4, -20, 12, 2.1, '#1d4ed8');
+
+                ctx.restore();
+
+            } else if (objType === 'locked_door') {
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(-24, -80, 48, 52);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(-24, -80, 48, 52);
+
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(0, -55, 9, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (objType === 'secret_letter') {
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(-18, -55, 36, 24);
+                ctx.fillStyle = '#dc2626';
+                ctx.beginPath();
+                ctx.arc(0, -43, 5, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (objType === 'empty_frame') {
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(-24, -70, 48, 38);
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(-21, -67, 42, 32);
+            } else if (objType === 'world_map') {
+                ctx.fillStyle = '#0284c7';
+                ctx.beginPath();
+                ctx.arc(0, -50, 18, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(0, -50, 18, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        function drawVaseShard(x, y, size, angle, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(0, -size);
+            ctx.lineTo(size * 0.7, size * 0.8);
+            ctx.lineTo(-size * 0.5, size * 0.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function loadTask(index) {
+            answeredCurrent = false;
+            const task = gameTasks[index];
+
+            document.getElementById('task-badge').innerText = task.badge;
+            document.getElementById('question-text').innerText = task.question;
+            document.getElementById('grammar-tip').innerText = task.tip;
+            document.getElementById('case-badge').innerText = `Case File #${index + 1}`;
+            document.getElementById('dialog-text').innerText = `Evidence #${index + 1}: Examine the museum clue and select the correct passive verb form!`;
+
+            const optionsGrid = document.getElementById('options-grid');
+            optionsGrid.innerHTML = '';
+
+            task.options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = "btn-action bg-slate-800 hover:bg-amber-500/20 border border-slate-700 hover:border-amber-400 text-white font-bold py-1.5 px-3 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm shadow-md flex items-center justify-center text-center transition-all";
+                btn.innerText = opt.text;
+                btn.onclick = () => handleAnswer(opt, btn);
+                optionsGrid.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(option, buttonEl) {
+            if (answeredCurrent) return;
+
+            const currentTask = gameTasks[currentTaskIndex];
+
+            if (option.correct) {
+                answeredCurrent = true;
+                sound.playCorrect();
+                
+                buttonEl.className = "btn-action bg-emerald-600 border-2 border-emerald-300 text-white font-bold py-1.5 px-3 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm shadow-lg";
+                document.getElementById('dialog-text').innerText = "✨ Brilliant deduction! That's completely correct!";
+                
+                score++;
+                document.getElementById('score-counter').innerText = `${score} / ${gameTasks.length}`;
+
+                setTimeout(() => {
+                    currentTaskIndex++;
+                    if (currentTaskIndex < gameTasks.length) {
+                        loadTask(currentTaskIndex);
+                    } else {
+                        showEndModal();
+                    }
+                }, 1300);
+
+            } else {
+                sound.playIncorrect();
+                buttonEl.className = "btn-action bg-rose-900/60 border-2 border-rose-500/60 text-slate-300 font-medium py-1.5 px-3 sm:py-2.5 sm:px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm shadow-md opacity-60";
+                buttonEl.disabled = true;
+                
+                document.getElementById('dialog-text').innerText = `💡 Detective Hint: ${currentTask.hint}`;
+            }
+        }
+
+        function showEndModal() {
+            const modal = document.getElementById('end-modal');
+            const stats = document.getElementById('final-stats');
+            stats.innerText = `Splendid job! You scored ${score} out of ${gameTasks.length}. Detective Whiskers successfully closed the museum case with your passive voice mastery!`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        document.getElementById('sound-btn').addEventListener('click', () => {
+            sound.muted = !sound.muted;
+            document.getElementById('sound-btn').innerText = sound.muted ? '🔇' : '🔊';
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            sound.playClick();
+            currentTaskIndex = 0;
+            score = 0;
+            document.getElementById('score-counter').innerText = `0 / ${gameTasks.length}`;
+            document.getElementById('end-modal').classList.add('hidden');
+            document.getElementById('end-modal').classList.remove('flex');
+            loadTask(0);
+        });
+
+        window.onload = () => {
+            resizeCanvas();
+            loadTask(0);
+            renderLoop();
+        };
+    </script>
+</body>
+</html>
